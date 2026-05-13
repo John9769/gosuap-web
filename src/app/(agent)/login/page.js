@@ -26,7 +26,7 @@ export default function LoginPage() {
 
       // Route based on role
       if (data.user.role === "ADMIN") {
-        router.push("/admin/dashboard");
+        router.push("/dashboard");
       } else {
         router.push("/agent-dashboard");
       }

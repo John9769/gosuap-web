@@ -36,8 +36,9 @@ export default function ShopCard({ shop }) {
             </span>
           )}
         </div>
+        {/* Distance — light */}
         {distanceKm && (
-          <div className="absolute top-3 right-3 bg-black/60 text-white text-[10px] font-black px-2 py-1 rounded-full">
+          <div className="absolute top-3 right-3 bg-white/90 text-gray-700 text-[10px] font-black px-2 py-1 rounded-full shadow-sm">
             📍 {distanceKm} km
           </div>
         )}
@@ -57,10 +58,12 @@ export default function ShopCard({ shop }) {
                 <img
                   src={item.image}
                   alt={item.name}
-                  className="w-16 h-16 rounded-xl object-cover"
+                  className="w-16 h-16 rounded-xl object-cover border border-gray-100"
                 />
                 <p className="text-[9px] font-bold text-gray-600 mt-1 truncate">{item.name}</p>
-                <p className="text-[9px] font-black text-green-600">RM{item.price}</p>
+                <p className="text-[9px] font-black" style={{ color: '#7cc620' }}>
+                  RM{Number(item.price).toFixed(2)}
+                </p>
               </div>
             ))}
           </div>
@@ -69,7 +72,8 @@ export default function ShopCard({ shop }) {
         {/* Navigate Button */}
         <button
           onClick={handleNavigate}
-          className="w-full bg-green-600 hover:bg-green-700 active:scale-95 transition text-white font-black py-3 rounded-xl text-xs uppercase tracking-widest"
+          style={{ background: '#7cc620' }}
+          className="w-full hover:opacity-90 active:scale-95 transition text-white font-black py-3 rounded-xl text-xs uppercase tracking-widest"
         >
           📍 Navigate via Waze
         </button>
