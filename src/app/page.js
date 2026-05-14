@@ -129,15 +129,10 @@ export default function LandingPage() {
         }
       `}</style>
 
-      {/* NAVBAR */}
-      <nav className="fixed top-0 left-0 right-0 z-50 flex justify-between items-center px-6 py-4"
+      {/* NAVBAR — logo only, no button */}
+      <nav className="fixed top-0 left-0 right-0 z-50 flex justify-center items-center px-6 py-4"
         style={{ background: 'linear-gradient(to bottom, rgba(10,17,0,0.95), transparent)' }}>
-        <img src="/logo.png" alt="GoSuap" className="h-9 w-auto object-contain" />
-        <Link href="/cari">
-          <button className="font-nunito text-[11px] font-black uppercase tracking-widest text-[#0a1100] bg-[#b8e030] px-5 py-2.5 rounded-full hover:bg-[#d4f040] transition">
-            Cari Makan →
-          </button>
-        </Link>
+        <img src="/logo.png" alt="GoSuap" className="h-14 w-auto object-contain" />
       </nav>
 
       {/* HERO */}
@@ -148,7 +143,7 @@ export default function LandingPage() {
         <div className="absolute bottom-0 left-0 right-0 h-40"
           style={{ background: 'linear-gradient(to bottom, transparent, #0a1100)' }} />
 
-        <div className="relative z-10 w-full max-w-6xl mx-auto px-6 flex flex-col lg:flex-row items-center gap-8 pt-24 pb-16">
+        <div className="relative z-10 w-full max-w-6xl mx-auto px-6 flex flex-col lg:flex-row items-center gap-8 pt-28 pb-16">
 
           {/* TEXT */}
           <div className="flex-1">
@@ -182,26 +177,26 @@ export default function LandingPage() {
               Direktori digital untuk peniaga makanan Muslim Malaysia. GPS-based discovery, menu showcase, navigate terus via Waze.
             </p>
 
-            {/* CTA */}
-            <div className="fade-up-4 flex flex-wrap gap-4 items-center">
+            {/* CTA — centered with Percuma directly below */}
+            <div className="fade-up-4 flex flex-col items-center gap-2 lg:items-start">
               <Link href="/cari">
                 <button className="cta-btn font-bebas text-[20px] tracking-widest text-[#0a1100] bg-[#b8e030] px-10 py-4 rounded-2xl">
                   CARI KEDAI SEKARANG
                 </button>
               </Link>
-              <span className="font-nunito text-xs text-gray-600 font-black uppercase tracking-widest">
+              <span className="font-nunito text-xs text-gray-600 font-black uppercase tracking-widest text-center">
                 Percuma · Tanpa Daftar
               </span>
             </div>
 
-            {/* Stats */}
+            {/* Stats — each number centered above its label */}
             <div className="fade-up-5 flex gap-8 mt-10">
               {[
                 { n: "3", label: "Negeri" },
                 { n: "100%", label: "Muslim Owned" },
                 { n: "GPS", label: "Powered" },
               ].map((s) => (
-                <div key={s.label}>
+                <div key={s.label} className="text-center">
                   <p className="font-bebas text-3xl glow-text" style={{color:'#b8e030'}}>{s.n}</p>
                   <p className="font-nunito text-[10px] text-gray-500 font-black uppercase tracking-widest">{s.label}</p>
                 </div>
@@ -256,7 +251,8 @@ export default function LandingPage() {
       <section className="max-w-6xl mx-auto px-6 py-24">
         <div className="text-center mb-16">
           <p className="font-nunito text-[11px] font-black text-[#6aaa22] uppercase tracking-[.3em] mb-3">Kenapa GoSuap?</p>
-          <h2 className="font-bebas text-[56px] lg:text-[72px] text-white leading-none">
+          {/* Reduced font size */}
+          <h2 className="font-bebas text-[40px] lg:text-[52px] text-white leading-none">
             SEMUA YANG ANDA PERLUKAN
           </h2>
         </div>
@@ -285,7 +281,7 @@ export default function LandingPage() {
         <div className="absolute inset-0 speed-bg opacity-40" />
         <div className="relative max-w-4xl mx-auto px-6 text-center">
           <p className="font-nunito text-[11px] font-black text-[#6aaa22] uppercase tracking-[.3em] mb-3">Cara Guna</p>
-          <h2 className="font-bebas text-[56px] lg:text-[72px] text-white leading-none mb-16">3 LANGKAH MUDAH</h2>
+          <h2 className="font-bebas text-[40px] lg:text-[56px] text-white leading-none mb-16">3 LANGKAH MUDAH</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[
               { step: "01", icon: "🗺️", title: "Pilih Negeri", desc: "Pilih negeri anda — Penang, Kedah, atau Negeri Sembilan." },
@@ -334,8 +330,8 @@ export default function LandingPage() {
       <footer className="border-t border-[#1c2e00] px-6 py-8">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
           <img src="/logo.png" alt="GoSuap" className="h-8 w-auto object-contain opacity-60" />
-          <p className="font-nunito text-[11px] text-gray-700 font-bold uppercase tracking-widest">
-            © 2025 GoSuap · Muslim Food Market Place Malaysia
+          <p className="font-nunito text-[11px] text-gray-700 font-bold uppercase tracking-widest text-center">
+            © 2026 GoSuap · Muslim Food Market Place Malaysia
           </p>
           <Link href="/login">
             <span className="font-nunito text-[11px] text-gray-700 font-black uppercase tracking-widest hover:text-[#b8e030] transition cursor-pointer">
