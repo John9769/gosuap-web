@@ -33,6 +33,7 @@ export default function MenuInput({ index, item, updateItem, token }) {
         <input
           type="file"
           accept="image/*"
+          capture="environment"
           className="absolute inset-0 opacity-0 cursor-pointer"
           onChange={handleImageChange}
           disabled={uploading}

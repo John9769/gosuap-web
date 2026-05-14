@@ -118,7 +118,8 @@ export default function AddShop() {
 
         <header className="flex justify-between items-center px-6 py-5 border-b border-gray-100 bg-white sticky top-0 z-50">
           <div>
-            <h1 className="text-lg font-black text-blue-900 leading-none tracking-tight">DAFTARKAN</h1>
+            <button onClick={() => router.back()} className="text-blue-900 font-black text-lg mr-3">←</button>
+<h1 className="text-lg font-black text-blue-900 leading-none tracking-tight">DAFTARKAN</h1>
             <p className="text-[10px] font-bold text-gray-400 tracking-[.2em] uppercase mt-0.5">Portal Vendor</p>
           </div>
           <img src="/logo.png" alt="GoSuap" className="h-10 w-auto object-contain" />
@@ -146,7 +147,7 @@ export default function AddShop() {
                   <span className="text-gray-400 font-bold text-xs">Ketik untuk muat naik</span>
                 </>
               )}
-              <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer"
+              <input type="file" accept="image/*" capture="environment" className="absolute inset-0 opacity-0 cursor-pointer"
                 onChange={handleCoverImage} disabled={uploadingCover} />
             </div>
           </section>
