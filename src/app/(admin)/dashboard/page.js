@@ -15,6 +15,13 @@ export default function AdminDashboard() {
   const [pendingPayments, setPendingPayments] = useState([]);
   const [verifying, setVerifying] = useState(null);
 
+  // Active vendors for premium management
+  const [activeVendors, setActiveVendors] = useState([]);
+  const [settingPremium, setSettingPremium] = useState(null);
+
+  // Agent leaderboard
+  const [agentStats, setAgentStats] = useState([]);
+
   // Create Agent
   const [agentForm, setAgentForm] = useState({ name: "", email: "", phone: "", password: "" });
   const [creatingAgent, setCreatingAgent] = useState(false);
@@ -39,19 +46,27 @@ export default function AdminDashboard() {
     setLoading(true);
     const token = getToken();
 
-    const [pendingRes, statsRes, paymentsRes] = await Promise.all([
+    const [pendingRes, statsRes, paymentsRes, vendorsRes, agentsRes] = await Promise.all([
       fetch(`${API_URL}/admin/pending`, { headers: { Authorization: `Bearer ${token}` } }),
       fetch(`${API_URL}/admin/stats`, { headers: { Authorization: `Bearer ${token}` } }),
       fetch(`${API_URL}/payments/pending`, { headers: { Authorization: `Bearer ${token}` } }),
+      fetch(`${API_URL}/admin/vendors`, { headers: { Authorization: `Bearer ${token}` } }),
+      fetch(`${API_URL}/admin/agents`, { headers: { Authorization: `Bearer ${token}` } }),
     ]);
 
-    const pendingData = await pendingRes.json();
-    const statsData = await statsRes.json();
-    const paymentsData = await paymentsRes.json();
+    const [pendingData, statsData, paymentsData, vendorsData, agentsData] = await Promise.all([
+      pendingRes.json(),
+      statsRes.json(),
+      paymentsRes.json(),
+      vendorsRes.json(),
+      agentsRes.json(),
+    ]);
 
     setPending(Array.isArray(pendingData) ? pendingData : []);
     setStats(statsData);
     setPendingPayments(Array.isArray(paymentsData) ? paymentsData : []);
+    setActiveVendors(Array.isArray(vendorsData) ? vendorsData : []);
+    setAgentStats(Array.isArray(agentsData) ? agentsData : []);
     setLoading(false);
   };
 
@@ -78,6 +93,18 @@ export default function AdminDashboard() {
       body: JSON.stringify({ paymentId }),
     });
     setVerifying(null);
+    fetchData();
+  };
+
+  const handleSetPremium = async (vendorId, isPremium) => {
+    setSettingPremium(vendorId);
+    const token = getToken();
+    await fetch(`${API_URL}/admin/set-premium`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ vendorId, isPremium, months: 1 }),
+    });
+    setSettingPremium(null);
     fetchData();
   };
 
@@ -204,6 +231,98 @@ export default function AdminDashboard() {
                     className="w-full bg-blue-900 hover:bg-blue-800 disabled:bg-blue-400 text-white font-black py-3 rounded-xl text-xs uppercase tracking-widest active:scale-95 transition">
                     {verifying === p.id ? "Mengesahkan..." : "✓ Sahkan Bayaran"}
                   </button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* PREMIUM MANAGEMENT */}
+          <div className="pt-2 border-t border-gray-100">
+            <h2 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">
+              Urus Premium ({activeVendors.length})
+            </h2>
+            {!loading && activeVendors.length === 0 && (
+              <div className="text-center py-10 border border-gray-100 rounded-2xl bg-gray-50">
+                <p className="text-2xl mb-2">⭐</p>
+                <p className="text-xs font-black text-gray-400 uppercase tracking-widest">Tiada vendor aktif</p>
+              </div>
+            )}
+            <div className="space-y-3">
+              {activeVendors.map((vendor) => (
+                <div key={vendor.id} className="flex items-center gap-3 p-3 border border-gray-100 rounded-2xl bg-gray-50">
+                  <img src={vendor.shopImage} alt={vendor.shopName}
+                    className="w-12 h-12 rounded-xl object-cover shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-black text-gray-900 text-sm truncate">{vendor.shopName}</p>
+                    <p className="text-[10px] text-gray-400 font-medium truncate">{vendor.state?.name}</p>
+                    {vendor.isPremium && (
+                      <span className="text-[9px] font-black text-yellow-600 uppercase tracking-widest">⭐ Premium Aktif</span>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => handleSetPremium(vendor.id, !vendor.isPremium)}
+                    disabled={settingPremium === vendor.id}
+                    className={`shrink-0 text-[9px] font-black px-3 py-2 rounded-xl uppercase tracking-widest transition active:scale-95 disabled:opacity-50 ${
+                      vendor.isPremium
+                        ? 'bg-red-50 text-red-500 border border-red-200 hover:bg-red-100'
+                        : 'bg-yellow-50 text-yellow-700 border border-yellow-200 hover:bg-yellow-100'
+                    }`}
+                  >
+                    {settingPremium === vendor.id ? '...' : vendor.isPremium ? 'Buang' : '⭐ Set'}
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* AGENT PERFORMANCE */}
+          <div className="pt-2 border-t border-gray-100">
+            <h2 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">
+              Prestasi Agen ({agentStats.length})
+            </h2>
+            {!loading && agentStats.length === 0 && (
+              <div className="text-center py-10 border border-gray-100 rounded-2xl bg-gray-50">
+                <p className="text-2xl mb-2">👤</p>
+                <p className="text-xs font-black text-gray-400 uppercase tracking-widest">Tiada agen</p>
+              </div>
+            )}
+            <div className="space-y-3">
+              {agentStats.map((agent, index) => (
+                <div key={agent.id} className="p-4 border border-gray-100 rounded-2xl bg-gray-50">
+                  <div className="flex items-center gap-3 mb-3">
+                    {/* Rank badge */}
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 font-black text-xs ${
+                      index === 0 ? 'bg-yellow-400 text-yellow-900' :
+                      index === 1 ? 'bg-gray-300 text-gray-700' :
+                      index === 2 ? 'bg-orange-300 text-orange-900' :
+                      'bg-gray-100 text-gray-500'
+                    }`}>
+                      {index + 1}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-black text-gray-900 text-sm truncate">{agent.name}</p>
+                      <p className="text-[10px] text-gray-400 font-medium">{agent.phone}</p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="text-sm font-black text-green-700">RM{Number(agent.totalCollected).toFixed(2)}</p>
+                      <p className="text-[9px] text-gray-400 font-bold uppercase">Kutipan</p>
+                    </div>
+                  </div>
+                  {/* Mini stats */}
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="text-center py-2 bg-white rounded-xl border border-gray-100">
+                      <p className="text-base font-black text-gray-800">{agent.totalVendors}</p>
+                      <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest">Direkrut</p>
+                    </div>
+                    <div className="text-center py-2 bg-white rounded-xl border border-gray-100">
+                      <p className="text-base font-black text-green-700">{agent.activeVendors}</p>
+                      <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest">Aktif</p>
+                    </div>
+                    <div className="text-center py-2 bg-white rounded-xl border border-gray-100">
+                      <p className="text-base font-black text-yellow-600">{agent.pendingVendors}</p>
+                      <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest">Pending</p>
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>

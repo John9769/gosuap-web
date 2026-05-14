@@ -1,7 +1,17 @@
+"use client";
+import { useRouter } from "next/navigation";
+
 export default function ShopCard({ shop }) {
-  const handleNavigate = () => {
+  const router = useRouter();
+
+  const handleNavigate = (e) => {
+    e.stopPropagation();
     const wazeUrl = `https://www.waze.com/ul?ll=${shop.latitude},${shop.longitude}&navigate=yes`;
     window.open(wazeUrl, "_blank");
+  };
+
+  const handleCardClick = () => {
+    router.push(`/kedai/${shop.id}`);
   };
 
   const distanceKm = shop.distance
@@ -9,8 +19,10 @@ export default function ShopCard({ shop }) {
     : null;
 
   return (
-    <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition">
-
+    <div
+      onClick={handleCardClick}
+      className="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition cursor-pointer"
+    >
       {/* Shop Image */}
       <div className="relative w-full h-44 bg-gray-100">
         <img
@@ -36,7 +48,6 @@ export default function ShopCard({ shop }) {
             </span>
           )}
         </div>
-        {/* Distance — light */}
         {distanceKm && (
           <div className="absolute top-3 right-3 bg-white/90 text-gray-700 text-[10px] font-black px-2 py-1 rounded-full shadow-sm">
             📍 {distanceKm} km
