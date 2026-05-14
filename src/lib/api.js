@@ -73,3 +73,51 @@ export const getAgentVendors = async (token) => {
     return [];
   }
 };
+
+// --- ADMIN ---
+export const createAgent = async (agentData, token) => {
+  try {
+    const response = await fetch(`${API_URL}/admin/create-agent`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(agentData),
+    });
+    return await response.json();
+  } catch (error) {
+    console.error("Create Agent Error:", error);
+    return { error: "Failed to create agent" };
+  }
+};
+
+// --- PAYMENTS ---
+export const submitPayment = async (paymentData, token) => {
+  try {
+    const response = await fetch(`${API_URL}/payments/submit`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(paymentData),
+    });
+    return await response.json();
+  } catch (error) {
+    console.error("Payment Submit Error:", error);
+    return { error: "Failed to submit payment" };
+  }
+};
+
+export const getAgentPayments = async (token) => {
+  try {
+    const response = await fetch(`${API_URL}/payments/my-payments`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return await response.json();
+  } catch (error) {
+    console.error("Fetch Payments Error:", error);
+    return [];
+  }
+};
