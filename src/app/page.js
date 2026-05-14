@@ -132,7 +132,7 @@ export default function LandingPage() {
       {/* NAVBAR — logo only, no button */}
       <nav className="fixed top-0 left-0 right-0 z-50 flex justify-center items-center px-6 py-4"
         style={{ background: 'linear-gradient(to bottom, rgba(10,17,0,0.95), transparent)' }}>
-        <img src="/logo.png" alt="GoSuap" className="h-14 w-auto object-contain" />
+        <img src="/logo.png" alt="GoSuap" className="h-20 w-auto object-contain" />
       </nav>
 
       {/* HERO */}
