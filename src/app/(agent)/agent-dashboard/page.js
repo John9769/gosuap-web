@@ -246,7 +246,7 @@ export default function AgentDashboard() {
                   ) : (
                     <>
                       <span className="text-xl mb-1">🧾</span>
-                      <span className="text-gray-400 font-bold text-xs">Ketik untuk muat naik resit</span>
+                      <span className="text-gray-400 font-bold text-xs">Klik untuk muat naik resit</span>
                     </>
                   )}
                   <input
