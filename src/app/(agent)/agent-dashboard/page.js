@@ -4,6 +4,23 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { getAgentVendors, uploadImage, submitPayment, getAgentPayments } from "@/lib/api";
 
+const MONTHS = [
+  { value: 1, label: "Januari" },
+  { value: 2, label: "Februari" },
+  { value: 3, label: "Mac" },
+  { value: 4, label: "April" },
+  { value: 5, label: "Mei" },
+  { value: 6, label: "Jun" },
+  { value: 7, label: "Julai" },
+  { value: 8, label: "Ogos" },
+  { value: 9, label: "September" },
+  { value: 10, label: "Oktober" },
+  { value: 11, label: "November" },
+  { value: 12, label: "Disember" },
+];
+
+const YEARS = [2026, 2027, 2028];
+
 export default function AgentDashboard() {
   const [agent, setAgent] = useState({ name: "", id: "" });
   const [approved, setApproved] = useState(0);
@@ -14,6 +31,8 @@ export default function AgentDashboard() {
   // Payment form
   const [selectedVendor, setSelectedVendor] = useState("");
   const [amount, setAmount] = useState("");
+  const [paymentMonth, setPaymentMonth] = useState("");
+  const [paymentYear, setPaymentYear] = useState("");
   const [receiptImage, setReceiptImage] = useState("");
   const [uploadingReceipt, setUploadingReceipt] = useState(false);
   const [submittingPayment, setSubmittingPayment] = useState(false);
@@ -21,7 +40,6 @@ export default function AgentDashboard() {
   const [paymentError, setPaymentError] = useState("");
 
   const router = useRouter();
-
   const getToken = () => localStorage.getItem("token");
 
   useEffect(() => {
@@ -59,14 +77,20 @@ export default function AgentDashboard() {
     setPaymentError("");
     setPaymentSuccess("");
 
-    if (!selectedVendor || !amount || !receiptImage) {
-      setPaymentError("Sila pilih vendor, masukkan amaun dan muat naik resit.");
+    if (!selectedVendor || !amount || !receiptImage || !paymentMonth || !paymentYear) {
+      setPaymentError("Sila lengkapkan semua maklumat termasuk bulan dan tahun bayaran.");
       return;
     }
 
     setSubmittingPayment(true);
     const result = await submitPayment(
-      { vendorId: selectedVendor, amount: parseFloat(amount), receiptImage },
+      {
+        vendorId: selectedVendor,
+        amount: parseFloat(amount),
+        receiptImage,
+        paymentMonth: parseInt(paymentMonth),
+        paymentYear: parseInt(paymentYear),
+      },
       getToken()
     );
     setSubmittingPayment(false);
@@ -75,8 +99,9 @@ export default function AgentDashboard() {
       setPaymentSuccess("Resit berjaya dihantar. Menunggu pengesahan admin.");
       setSelectedVendor("");
       setAmount("");
+      setPaymentMonth("");
+      setPaymentYear("");
       setReceiptImage("");
-      // Refresh payments list
       getAgentPayments(getToken()).then((data) => {
         if (Array.isArray(data)) setPayments(data);
       });
@@ -89,6 +114,8 @@ export default function AgentDashboard() {
     localStorage.clear();
     window.location.href = "/";
   };
+
+  const activeVendors = vendors.filter((v) => v.status === "ACTIVE");
 
   return (
     <div className="bg-gray-100 min-h-screen flex justify-center py-5 font-sans">
@@ -150,7 +177,8 @@ export default function AgentDashboard() {
             )}
 
             <div className="space-y-3">
-              {/* Vendor selector */}
+
+              {/* Vendor selector — ACTIVE only */}
               <div>
                 <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Pilih Vendor</label>
                 <select
@@ -159,10 +187,40 @@ export default function AgentDashboard() {
                   className="w-full px-4 py-3.5 border border-gray-100 rounded-2xl bg-gray-50 outline-none focus:border-blue-500 focus:bg-white transition text-sm font-medium text-gray-800"
                 >
                   <option value="">-- Pilih Kedai --</option>
-                  {vendors.map((v) => (
+                  {activeVendors.map((v) => (
                     <option key={v.id} value={v.id}>{v.shopName}</option>
                   ))}
                 </select>
+              </div>
+
+              {/* Month + Year */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Bulan</label>
+                  <select
+                    value={paymentMonth}
+                    onChange={(e) => setPaymentMonth(e.target.value)}
+                    className="w-full px-4 py-3.5 border border-gray-100 rounded-2xl bg-gray-50 outline-none focus:border-blue-500 focus:bg-white transition text-sm font-medium text-gray-800"
+                  >
+                    <option value="">-- Bulan --</option>
+                    {MONTHS.map((m) => (
+                      <option key={m.value} value={m.value}>{m.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Tahun</label>
+                  <select
+                    value={paymentYear}
+                    onChange={(e) => setPaymentYear(e.target.value)}
+                    className="w-full px-4 py-3.5 border border-gray-100 rounded-2xl bg-gray-50 outline-none focus:border-blue-500 focus:bg-white transition text-sm font-medium text-gray-800"
+                  >
+                    <option value="">-- Tahun --</option>
+                    {YEARS.map((y) => (
+                      <option key={y} value={y}>{y}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
               {/* Amount */}
@@ -177,7 +235,7 @@ export default function AgentDashboard() {
                 />
               </div>
 
-              {/* Receipt image upload */}
+              {/* Receipt image */}
               <div>
                 <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Gambar Resit</label>
                 <div className="relative w-full h-32 bg-gray-50 border-2 border-dashed border-gray-200 rounded-2xl flex flex-col items-center justify-center overflow-hidden hover:border-blue-300 transition">
@@ -194,6 +252,7 @@ export default function AgentDashboard() {
                   <input
                     type="file"
                     accept="image/*"
+                    capture="environment"
                     className="absolute inset-0 opacity-0 cursor-pointer"
                     onChange={handleReceiptUpload}
                     disabled={uploadingReceipt}
@@ -224,6 +283,11 @@ export default function AgentDashboard() {
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-black text-gray-900 truncate">{p.vendor?.shopName}</p>
                       <p className="text-xs font-bold text-gray-400">RM{Number(p.amount).toFixed(2)}</p>
+                      {p.paymentMonth && p.paymentYear && (
+                        <p className="text-[10px] font-bold text-blue-500">
+                          {MONTHS.find(m => m.value === p.paymentMonth)?.label} {p.paymentYear}
+                        </p>
+                      )}
                     </div>
                     <span className={`text-[9px] font-black px-2 py-1 rounded-full uppercase ${p.isVerified ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
                       {p.isVerified ? "Disahkan" : "Menunggu"}
