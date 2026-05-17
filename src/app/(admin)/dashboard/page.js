@@ -1,10 +1,9 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { createAgent } from "@/lib/api";
+import { createAgent, resetAgentPassword } from "@/lib/api";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
-
 const MONTH_NAMES = ["", "Jan", "Feb", "Mac", "Apr", "Mei", "Jun", "Jul", "Ogos", "Sep", "Okt", "Nov", "Dis"];
 
 function daysUntil(dateStr) {
@@ -18,16 +17,18 @@ export default function AdminDashboard() {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [approving, setApproving] = useState(null);
-
   const [pendingPayments, setPendingPayments] = useState([]);
   const [verifying, setVerifying] = useState(null);
-
   const [activeVendors, setActiveVendors] = useState([]);
   const [settingPremium, setSettingPremium] = useState(null);
-
   const [expiringVendors, setExpiringVendors] = useState([]);
   const [agentStats, setAgentStats] = useState([]);
   const [expandedAgent, setExpandedAgent] = useState(null);
+
+  // Reset password per agent
+  const [resetPasswords, setResetPasswords] = useState({});
+  const [resetting, setResetting] = useState(null);
+  const [resetMessages, setResetMessages] = useState({});
 
   const [agentForm, setAgentForm] = useState({ name: "", email: "", phone: "", password: "" });
   const [creatingAgent, setCreatingAgent] = useState(false);
@@ -48,7 +49,6 @@ export default function AdminDashboard() {
     if (!checkAuth()) return;
     setLoading(true);
     const token = getToken();
-
     const [pendingRes, statsRes, paymentsRes, vendorsRes, expiringRes, agentsRes] = await Promise.all([
       fetch(`${API_URL}/admin/pending`, { headers: { Authorization: `Bearer ${token}` } }),
       fetch(`${API_URL}/admin/stats`, { headers: { Authorization: `Bearer ${token}` } }),
@@ -57,12 +57,10 @@ export default function AdminDashboard() {
       fetch(`${API_URL}/admin/expiring`, { headers: { Authorization: `Bearer ${token}` } }),
       fetch(`${API_URL}/admin/agents`, { headers: { Authorization: `Bearer ${token}` } }),
     ]);
-
     const [pendingData, statsData, paymentsData, vendorsData, expiringData, agentsData] = await Promise.all([
       pendingRes.json(), statsRes.json(), paymentsRes.json(),
       vendorsRes.json(), expiringRes.json(), agentsRes.json(),
     ]);
-
     setPending(Array.isArray(pendingData) ? pendingData : []);
     setStats(statsData);
     setPendingPayments(Array.isArray(paymentsData) ? paymentsData : []);
@@ -104,6 +102,23 @@ export default function AdminDashboard() {
     setSettingPremium(null); fetchData();
   };
 
+  const handleResetPassword = async (agentId) => {
+    const newPassword = resetPasswords[agentId];
+    if (!newPassword || newPassword.length < 8) {
+      setResetMessages({ ...resetMessages, [agentId]: { type: 'error', text: 'Min 8 aksara.' } });
+      return;
+    }
+    setResetting(agentId);
+    const result = await resetAgentPassword(agentId, newPassword, getToken());
+    setResetting(null);
+    if (result.message) {
+      setResetMessages({ ...resetMessages, [agentId]: { type: 'success', text: result.message } });
+      setResetPasswords({ ...resetPasswords, [agentId]: "" });
+    } else {
+      setResetMessages({ ...resetMessages, [agentId]: { type: 'error', text: result.error || 'Gagal.' } });
+    }
+  };
+
   const handleCreateAgent = async () => {
     setAgentError(""); setAgentSuccess("");
     const { name, email, phone, password } = agentForm;
@@ -131,7 +146,6 @@ export default function AdminDashboard() {
     <div className="bg-gray-100 min-h-screen font-sans">
       <main className="max-w-md mx-auto bg-white min-h-screen shadow-2xl pb-20">
 
-        {/* HEADER */}
         <header className="flex justify-between items-center px-6 py-5 border-b border-gray-100 bg-white sticky top-0 z-50">
           <div>
             <h1 className="text-lg font-black text-blue-900 leading-none tracking-tight">ADMIN</h1>
@@ -142,7 +156,7 @@ export default function AdminDashboard() {
 
         <div className="px-6 py-6 space-y-6">
 
-          {/* STATS — 2 rows */}
+          {/* STATS */}
           {stats && (
             <div className="space-y-2">
               <div className="grid grid-cols-3 gap-2">
@@ -178,9 +192,7 @@ export default function AdminDashboard() {
 
           {/* PENDING APPROVALS */}
           <div>
-            <h2 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">
-              Menunggu Kelulusan Vendor ({pending.length})
-            </h2>
+            <h2 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Menunggu Kelulusan Vendor ({pending.length})</h2>
             {loading && <p className="text-center text-gray-400 text-xs font-bold py-8 uppercase tracking-widest">Memuatkan...</p>}
             {!loading && pending.length === 0 && (
               <div className="text-center py-8 border border-gray-100 rounded-2xl bg-gray-50">
@@ -211,9 +223,7 @@ export default function AdminDashboard() {
 
           {/* RECEIPT VERIFICATION */}
           <div className="pt-2 border-t border-gray-100">
-            <h2 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">
-              Resit Bayaran ({pendingPayments.length})
-            </h2>
+            <h2 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Resit Bayaran ({pendingPayments.length})</h2>
             {!loading && pendingPayments.length === 0 && (
               <div className="text-center py-8 border border-gray-100 rounded-2xl bg-gray-50">
                 <p className="text-2xl mb-1">💳</p>
@@ -246,9 +256,7 @@ export default function AdminDashboard() {
 
           {/* RENEWAL TRACKER */}
           <div className="pt-2 border-t border-orange-100">
-            <h2 className="text-[10px] font-black text-orange-500 uppercase tracking-widest mb-3">
-              🔔 Penuh Tempoh — Perlu Diperbaharui ({expiringVendors.length})
-            </h2>
+            <h2 className="text-[10px] font-black text-orange-500 uppercase tracking-widest mb-3">🔔 Penuh Tempoh — Perlu Diperbaharui ({expiringVendors.length})</h2>
             {!loading && expiringVendors.length === 0 && (
               <div className="text-center py-8 border border-gray-100 rounded-2xl bg-gray-50">
                 <p className="text-2xl mb-1">✅</p>
@@ -266,9 +274,7 @@ export default function AdminDashboard() {
                         <p className="font-black text-gray-900 text-sm truncate">{vendor.shopName}</p>
                         <p className="text-[10px] text-gray-500 font-medium">{vendor.state?.name}</p>
                         <p className="text-[10px] text-blue-600 font-black">Agen: {vendor.agent?.name}</p>
-                        <p className={`text-[10px] font-black mt-0.5 ${days <= 7 ? 'text-red-600' : 'text-orange-600'}`}>
-                          ⏳ {days} hari lagi
-                        </p>
+                        <p className={`text-[10px] font-black mt-0.5 ${days <= 7 ? 'text-red-600' : 'text-orange-600'}`}>⏳ {days} hari lagi</p>
                       </div>
                     </div>
                     <a href={whatsappLink(vendor.agent?.phone)} target="_blank" rel="noreferrer"
@@ -283,9 +289,7 @@ export default function AdminDashboard() {
 
           {/* PREMIUM MANAGEMENT */}
           <div className="pt-2 border-t border-gray-100">
-            <h2 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">
-              Urus Premium ({activeVendors.length})
-            </h2>
+            <h2 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Urus Premium ({activeVendors.length})</h2>
             {!loading && activeVendors.length === 0 && (
               <div className="text-center py-8 border border-gray-100 rounded-2xl bg-gray-50">
                 <p className="text-2xl mb-1">⭐</p>
@@ -303,8 +307,7 @@ export default function AdminDashboard() {
                   </div>
                   <button onClick={() => handleSetPremium(vendor.id, !vendor.isPremium)} disabled={settingPremium === vendor.id}
                     className={`shrink-0 text-[9px] font-black px-3 py-2 rounded-xl uppercase tracking-widest transition active:scale-95 disabled:opacity-50 ${
-                      vendor.isPremium
-                        ? 'bg-red-50 text-red-500 border border-red-200 hover:bg-red-100'
+                      vendor.isPremium ? 'bg-red-50 text-red-500 border border-red-200 hover:bg-red-100'
                         : 'bg-yellow-50 text-yellow-700 border border-yellow-200 hover:bg-yellow-100'
                     }`}>
                     {settingPremium === vendor.id ? '...' : vendor.isPremium ? 'Buang' : '⭐ Set'}
@@ -314,11 +317,9 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          {/* AGENT PERFORMANCE — expandable with vendor details */}
+          {/* AGENT PERFORMANCE — expandable */}
           <div className="pt-2 border-t border-gray-100">
-            <h2 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">
-              Prestasi Agen ({agentStats.length})
-            </h2>
+            <h2 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Prestasi Agen ({agentStats.length})</h2>
             {!loading && agentStats.length === 0 && (
               <div className="text-center py-8 border border-gray-100 rounded-2xl bg-gray-50">
                 <p className="text-2xl mb-1">👤</p>
@@ -328,13 +329,11 @@ export default function AdminDashboard() {
             <div className="space-y-3">
               {agentStats.map((agent, index) => (
                 <div key={agent.id} className="border border-gray-100 rounded-2xl bg-gray-50 overflow-hidden">
-                  {/* Agent header — tap to expand */}
                   <div className="p-4 cursor-pointer" onClick={() => setExpandedAgent(expandedAgent === agent.id ? null : agent.id)}>
                     <div className="flex items-center gap-3 mb-3">
                       <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 font-black text-xs ${
-                        index === 0 ? 'bg-yellow-400 text-yellow-900' :
-                        index === 1 ? 'bg-gray-300 text-gray-700' :
-                        index === 2 ? 'bg-orange-300 text-orange-900' : 'bg-gray-100 text-gray-500'
+                        index === 0 ? 'bg-yellow-400 text-yellow-900' : index === 1 ? 'bg-gray-300 text-gray-700'
+                          : index === 2 ? 'bg-orange-300 text-orange-900' : 'bg-gray-100 text-gray-500'
                       }`}>{index + 1}</div>
                       <div className="flex-1 min-w-0">
                         <p className="font-black text-gray-900 text-sm truncate">{agent.name}</p>
@@ -360,22 +359,17 @@ export default function AdminDashboard() {
                       </div>
                     </div>
                     <p className="text-[10px] text-blue-500 font-black uppercase tracking-widest text-center mt-2">
-                      {expandedAgent === agent.id ? '▲ Tutup' : '▼ Lihat Vendor'}
+                      {expandedAgent === agent.id ? '▲ Tutup' : '▼ Lihat Detail'}
                     </p>
                   </div>
 
-                  {/* Expanded — vendor list with expiry */}
                   {expandedAgent === agent.id && (
                     <div className="border-t border-gray-100 bg-white px-4 py-3 space-y-2">
-                      {agent.vendors.length === 0 && (
-                        <p className="text-xs text-gray-400 font-bold text-center py-2">Tiada vendor</p>
-                      )}
+                      {agent.vendors.length === 0 && <p className="text-xs text-gray-400 font-bold text-center py-2">Tiada vendor</p>}
                       {agent.vendors.map((v) => {
                         const days = daysUntil(v.expiryDate);
-                        const expiryColor = v.expiryStatus === 'expired' ? 'text-red-500' :
-                          v.expiryStatus === 'expiring' ? 'text-orange-500' : 'text-green-600';
-                        const expiryBg = v.expiryStatus === 'expired' ? 'bg-red-50 border-red-100' :
-                          v.expiryStatus === 'expiring' ? 'bg-orange-50 border-orange-100' : 'bg-green-50 border-green-100';
+                        const expiryColor = v.expiryStatus === 'expired' ? 'text-red-500' : v.expiryStatus === 'expiring' ? 'text-orange-500' : 'text-green-600';
+                        const expiryBg = v.expiryStatus === 'expired' ? 'bg-red-50 border-red-100' : v.expiryStatus === 'expiring' ? 'bg-orange-50 border-orange-100' : 'bg-green-50 border-green-100';
                         return (
                           <div key={v.id} className={`flex items-center justify-between p-2.5 rounded-xl border ${expiryBg}`}>
                             <div className="flex-1 min-w-0">
@@ -383,36 +377,49 @@ export default function AdminDashboard() {
                               <p className="text-[9px] text-gray-400 font-medium">{v.state}</p>
                               {v.isPremium && <span className="text-[9px] font-black text-yellow-600">⭐ Premium</span>}
                             </div>
-                            <div className="text-right shrink-0 ml-2">
-                              <span className={`text-[9px] font-black ${expiryColor} uppercase`}>
-                                {v.expiryStatus === 'expired' ? 'Tamat' :
-                                  v.expiryStatus === 'expiring' ? `${days}h lagi` : `${days}h`}
-                              </span>
-                            </div>
+                            <span className={`text-[9px] font-black ${expiryColor} uppercase ml-2 shrink-0`}>
+                              {v.expiryStatus === 'expired' ? 'Tamat' : v.expiryStatus === 'expiring' ? `${days}h lagi` : `${days}h`}
+                            </span>
                           </div>
                         );
                       })}
 
-                      {/* Monthly revenue for this agent */}
                       {Object.keys(agent.monthlyRevenue).length > 0 && (
                         <div className="mt-3 pt-3 border-t border-gray-100">
                           <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2">Kutipan Bulanan</p>
-                          {Object.entries(agent.monthlyRevenue)
-                            .sort((a, b) => b[0].localeCompare(a[0]))
-                            .slice(0, 6)
-                            .map(([key, amount]) => {
-                              const [year, month] = key.split('-');
-                              return (
-                                <div key={key} className="flex justify-between items-center py-1">
-                                  <p className="text-[10px] font-bold text-gray-600">{MONTH_NAMES[parseInt(month)]} {year}</p>
-                                  <p className="text-[10px] font-black text-green-700">RM{Number(amount).toFixed(2)}</p>
-                                </div>
-                              );
-                            })}
+                          {Object.entries(agent.monthlyRevenue).sort((a, b) => b[0].localeCompare(a[0])).slice(0, 6).map(([key, amount]) => {
+                            const [year, month] = key.split('-');
+                            return (
+                              <div key={key} className="flex justify-between items-center py-1">
+                                <p className="text-[10px] font-bold text-gray-600">{MONTH_NAMES[parseInt(month)]} {year}</p>
+                                <p className="text-[10px] font-black text-green-700">RM{Number(amount).toFixed(2)}</p>
+                              </div>
+                            );
+                          })}
                         </div>
                       )}
 
-                      {/* WhatsApp agent */}
+                      {/* RESET PASSWORD */}
+                      <div className="mt-3 pt-3 border-t border-gray-100">
+                        <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2">Set Semula Kata Laluan</p>
+                        {resetMessages[agent.id] && (
+                          <div className={`px-3 py-2 rounded-xl text-[10px] font-black mb-2 ${
+                            resetMessages[agent.id].type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'
+                          }`}>
+                            {resetMessages[agent.id].text}
+                          </div>
+                        )}
+                        <div className="flex gap-2">
+                          <input type="password" placeholder="Kata laluan baharu" value={resetPasswords[agent.id] || ""}
+                            onChange={(e) => setResetPasswords({ ...resetPasswords, [agent.id]: e.target.value })}
+                            className="flex-1 px-3 py-2.5 border border-gray-100 rounded-xl bg-gray-50 outline-none focus:border-blue-500 text-xs font-medium text-gray-800 placeholder:text-gray-300" />
+                          <button onClick={() => handleResetPassword(agent.id)} disabled={resetting === agent.id}
+                            className="shrink-0 bg-blue-900 hover:bg-blue-800 disabled:bg-blue-400 text-white font-black px-3 py-2.5 rounded-xl text-[10px] uppercase tracking-widest transition">
+                            {resetting === agent.id ? '...' : 'Set'}
+                          </button>
+                        </div>
+                      </div>
+
                       <a href={whatsappLink(agent.phone)} target="_blank" rel="noreferrer"
                         className="flex items-center justify-center gap-2 w-full bg-green-600 hover:bg-green-700 text-white font-black py-2.5 rounded-xl text-xs uppercase tracking-widest transition mt-2">
                         💬 WhatsApp {agent.name}
@@ -427,12 +434,8 @@ export default function AdminDashboard() {
           {/* CREATE AGENT */}
           <div className="pt-4 border-t border-gray-100">
             <h2 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Lantik Agen Baru</h2>
-            {agentSuccess && (
-              <div className="bg-green-50 text-green-700 px-4 py-3 rounded-2xl text-xs font-black mb-4 border border-green-100 uppercase tracking-wide">✅ {agentSuccess}</div>
-            )}
-            {agentError && (
-              <div className="bg-red-50 text-red-600 px-4 py-3 rounded-2xl text-xs font-black mb-4 border border-red-100 uppercase tracking-wide">⚠️ {agentError}</div>
-            )}
+            {agentSuccess && <div className="bg-green-50 text-green-700 px-4 py-3 rounded-2xl text-xs font-black mb-4 border border-green-100 uppercase tracking-wide">✅ {agentSuccess}</div>}
+            {agentError && <div className="bg-red-50 text-red-600 px-4 py-3 rounded-2xl text-xs font-black mb-4 border border-red-100 uppercase tracking-wide">⚠️ {agentError}</div>}
             <div className="space-y-3">
               {[
                 { label: "Nama", key: "name", type: "text", placeholder: "cth. Ahmad Razif" },

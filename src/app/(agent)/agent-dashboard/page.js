@@ -2,21 +2,15 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { getAgentVendors, uploadImage, submitPayment, getAgentPayments } from "@/lib/api";
+import { getAgentVendors, uploadImage, submitPayment, getAgentPayments, changePassword } from "@/lib/api";
 
 const MONTHS = [
-  { value: 1, label: "Januari" },
-  { value: 2, label: "Februari" },
-  { value: 3, label: "Mac" },
-  { value: 4, label: "April" },
-  { value: 5, label: "Mei" },
-  { value: 6, label: "Jun" },
-  { value: 7, label: "Julai" },
-  { value: 8, label: "Ogos" },
-  { value: 9, label: "September" },
-  { value: 10, label: "Oktober" },
-  { value: 11, label: "November" },
-  { value: 12, label: "Disember" },
+  { value: 1, label: "Januari" }, { value: 2, label: "Februari" },
+  { value: 3, label: "Mac" }, { value: 4, label: "April" },
+  { value: 5, label: "Mei" }, { value: 6, label: "Jun" },
+  { value: 7, label: "Julai" }, { value: 8, label: "Ogos" },
+  { value: 9, label: "September" }, { value: 10, label: "Oktober" },
+  { value: 11, label: "November" }, { value: 12, label: "Disember" },
 ];
 
 const YEARS = [2026, 2027, 2028];
@@ -39,6 +33,14 @@ export default function AgentDashboard() {
   const [paymentSuccess, setPaymentSuccess] = useState("");
   const [paymentError, setPaymentError] = useState("");
 
+  // Change password
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [changingPassword, setChangingPassword] = useState(false);
+  const [pwSuccess, setPwSuccess] = useState("");
+  const [pwError, setPwError] = useState("");
+
   const router = useRouter();
   const getToken = () => localStorage.getItem("token");
 
@@ -46,11 +48,8 @@ export default function AgentDashboard() {
     const name = localStorage.getItem("agentName");
     const id = localStorage.getItem("agentId");
     const token = getToken();
-
     if (!token) { router.push("/login"); return; }
-
     setAgent({ name: name || "Agent", id: id || "---" });
-
     getAgentVendors(token).then((data) => {
       if (Array.isArray(data)) {
         setVendors(data);
@@ -58,7 +57,6 @@ export default function AgentDashboard() {
         setPending(data.filter((v) => v.status === "PENDING").length);
       }
     });
-
     getAgentPayments(token).then((data) => {
       if (Array.isArray(data)) setPayments(data);
     });
@@ -74,47 +72,52 @@ export default function AgentDashboard() {
   };
 
   const handleSubmitPayment = async () => {
-    setPaymentError("");
-    setPaymentSuccess("");
-
+    setPaymentError(""); setPaymentSuccess("");
     if (!selectedVendor || !amount || !receiptImage || !paymentMonth || !paymentYear) {
       setPaymentError("Sila lengkapkan semua maklumat termasuk bulan dan tahun bayaran.");
       return;
     }
-
     setSubmittingPayment(true);
-    const result = await submitPayment(
-      {
-        vendorId: selectedVendor,
-        amount: parseFloat(amount),
-        receiptImage,
-        paymentMonth: parseInt(paymentMonth),
-        paymentYear: parseInt(paymentYear),
-      },
-      getToken()
-    );
+    const result = await submitPayment({
+      vendorId: selectedVendor, amount: parseFloat(amount),
+      receiptImage, paymentMonth: parseInt(paymentMonth), paymentYear: parseInt(paymentYear),
+    }, getToken());
     setSubmittingPayment(false);
-
     if (result.payment) {
       setPaymentSuccess("Resit berjaya dihantar. Menunggu pengesahan admin.");
-      setSelectedVendor("");
-      setAmount("");
-      setPaymentMonth("");
-      setPaymentYear("");
-      setReceiptImage("");
-      getAgentPayments(getToken()).then((data) => {
-        if (Array.isArray(data)) setPayments(data);
-      });
+      setSelectedVendor(""); setAmount(""); setPaymentMonth(""); setPaymentYear(""); setReceiptImage("");
+      getAgentPayments(getToken()).then((data) => { if (Array.isArray(data)) setPayments(data); });
     } else {
       setPaymentError(result.error || "Gagal menghantar resit.");
     }
   };
 
-  const handleLogout = () => {
-    localStorage.clear();
-    window.location.href = "/";
+  const handleChangePassword = async () => {
+    setPwError(""); setPwSuccess("");
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      setPwError("Sila isi semua ruangan kata laluan.");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPwError("Kata laluan baharu tidak sepadan.");
+      return;
+    }
+    if (newPassword.length < 8) {
+      setPwError("Kata laluan baharu mestilah sekurang-kurangnya 8 aksara.");
+      return;
+    }
+    setChangingPassword(true);
+    const result = await changePassword(currentPassword, newPassword, getToken());
+    setChangingPassword(false);
+    if (result.message) {
+      setPwSuccess("Kata laluan berjaya ditukar.");
+      setCurrentPassword(""); setNewPassword(""); setConfirmPassword("");
+    } else {
+      setPwError(result.error || "Gagal menukar kata laluan.");
+    }
   };
 
+  const handleLogout = () => { localStorage.clear(); window.location.href = "/"; };
   const activeVendors = vendors.filter((v) => v.status === "ACTIVE");
 
   return (
@@ -160,111 +163,53 @@ export default function AgentDashboard() {
 
           {/* SUBMIT PAYMENT */}
           <div className="pt-2 border-t border-gray-100">
-            <h2 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">
-              Hantar Resit Bayaran
-            </h2>
-
-            {paymentSuccess && (
-              <div className="bg-green-50 text-green-700 px-4 py-3 rounded-2xl text-xs font-black mb-4 border border-green-100 uppercase tracking-wide">
-                ✅ {paymentSuccess}
-              </div>
-            )}
-
-            {paymentError && (
-              <div className="bg-red-50 text-red-600 px-4 py-3 rounded-2xl text-xs font-black mb-4 border border-red-100 uppercase tracking-wide">
-                ⚠️ {paymentError}
-              </div>
-            )}
-
+            <h2 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Hantar Resit Bayaran</h2>
+            {paymentSuccess && <div className="bg-green-50 text-green-700 px-4 py-3 rounded-2xl text-xs font-black mb-4 border border-green-100 uppercase tracking-wide">✅ {paymentSuccess}</div>}
+            {paymentError && <div className="bg-red-50 text-red-600 px-4 py-3 rounded-2xl text-xs font-black mb-4 border border-red-100 uppercase tracking-wide">⚠️ {paymentError}</div>}
             <div className="space-y-3">
-
-              {/* Vendor selector — ACTIVE only */}
               <div>
                 <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Pilih Vendor</label>
-                <select
-                  value={selectedVendor}
-                  onChange={(e) => setSelectedVendor(e.target.value)}
-                  className="w-full px-4 py-3.5 border border-gray-100 rounded-2xl bg-gray-50 outline-none focus:border-blue-500 focus:bg-white transition text-sm font-medium text-gray-800"
-                >
+                <select value={selectedVendor} onChange={(e) => setSelectedVendor(e.target.value)}
+                  className="w-full px-4 py-3.5 border border-gray-100 rounded-2xl bg-gray-50 outline-none focus:border-blue-500 focus:bg-white transition text-sm font-medium text-gray-800">
                   <option value="">-- Pilih Kedai --</option>
-                  {activeVendors.map((v) => (
-                    <option key={v.id} value={v.id}>{v.shopName}</option>
-                  ))}
+                  {activeVendors.map((v) => (<option key={v.id} value={v.id}>{v.shopName}</option>))}
                 </select>
               </div>
-
-              {/* Month + Year */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Bulan</label>
-                  <select
-                    value={paymentMonth}
-                    onChange={(e) => setPaymentMonth(e.target.value)}
-                    className="w-full px-4 py-3.5 border border-gray-100 rounded-2xl bg-gray-50 outline-none focus:border-blue-500 focus:bg-white transition text-sm font-medium text-gray-800"
-                  >
+                  <select value={paymentMonth} onChange={(e) => setPaymentMonth(e.target.value)}
+                    className="w-full px-4 py-3.5 border border-gray-100 rounded-2xl bg-gray-50 outline-none focus:border-blue-500 focus:bg-white transition text-sm font-medium text-gray-800">
                     <option value="">-- Bulan --</option>
-                    {MONTHS.map((m) => (
-                      <option key={m.value} value={m.value}>{m.label}</option>
-                    ))}
+                    {MONTHS.map((m) => (<option key={m.value} value={m.value}>{m.label}</option>))}
                   </select>
                 </div>
                 <div>
                   <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Tahun</label>
-                  <select
-                    value={paymentYear}
-                    onChange={(e) => setPaymentYear(e.target.value)}
-                    className="w-full px-4 py-3.5 border border-gray-100 rounded-2xl bg-gray-50 outline-none focus:border-blue-500 focus:bg-white transition text-sm font-medium text-gray-800"
-                  >
+                  <select value={paymentYear} onChange={(e) => setPaymentYear(e.target.value)}
+                    className="w-full px-4 py-3.5 border border-gray-100 rounded-2xl bg-gray-50 outline-none focus:border-blue-500 focus:bg-white transition text-sm font-medium text-gray-800">
                     <option value="">-- Tahun --</option>
-                    {YEARS.map((y) => (
-                      <option key={y} value={y}>{y}</option>
-                    ))}
+                    {YEARS.map((y) => (<option key={y} value={y}>{y}</option>))}
                   </select>
                 </div>
               </div>
-
-              {/* Amount */}
               <div>
                 <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Amaun (RM)</label>
-                <input
-                  type="number"
-                  placeholder="cth. 60.00"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  className="w-full px-4 py-3.5 border border-gray-100 rounded-2xl bg-gray-50 outline-none focus:border-blue-500 focus:bg-white transition text-sm font-medium text-gray-800 placeholder:text-gray-300"
-                />
+                <input type="number" placeholder="cth. 60.00" value={amount} onChange={(e) => setAmount(e.target.value)}
+                  className="w-full px-4 py-3.5 border border-gray-100 rounded-2xl bg-gray-50 outline-none focus:border-blue-500 focus:bg-white transition text-sm font-medium text-gray-800 placeholder:text-gray-300" />
               </div>
-
-              {/* Receipt image */}
               <div>
                 <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Gambar Resit</label>
                 <div className="relative w-full h-32 bg-gray-50 border-2 border-dashed border-gray-200 rounded-2xl flex flex-col items-center justify-center overflow-hidden hover:border-blue-300 transition">
-                  {uploadingReceipt ? (
-                    <span className="text-xs font-black text-blue-500">Memuat naik...</span>
-                  ) : receiptImage ? (
-                    <img src={receiptImage} alt="resit" className="w-full h-full object-cover" />
-                  ) : (
-                    <>
-                      <span className="text-xl mb-1">🧾</span>
-                      <span className="text-gray-400 font-bold text-xs">Klik untuk muat naik resit</span>
-                    </>
-                  )}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    capture="environment"
-                    className="absolute inset-0 opacity-0 cursor-pointer"
-                    onChange={handleReceiptUpload}
-                    disabled={uploadingReceipt}
-                  />
+                  {uploadingReceipt ? <span className="text-xs font-black text-blue-500">Memuat naik...</span>
+                    : receiptImage ? <img src={receiptImage} alt="resit" className="w-full h-full object-cover" />
+                    : <><span className="text-xl mb-1">🧾</span><span className="text-gray-400 font-bold text-xs">Klik untuk muat naik resit</span></>}
+                  <input type="file" accept="image/*" capture="environment" className="absolute inset-0 opacity-0 cursor-pointer"
+                    onChange={handleReceiptUpload} disabled={uploadingReceipt} />
                 </div>
               </div>
-
-              <button
-                onClick={handleSubmitPayment}
-                disabled={submittingPayment}
-                className="w-full bg-blue-900 hover:bg-blue-800 disabled:bg-blue-400 text-white font-black py-4 rounded-2xl text-xs uppercase tracking-widest active:scale-[0.98] transition"
-              >
+              <button onClick={handleSubmitPayment} disabled={submittingPayment}
+                className="w-full bg-blue-900 hover:bg-blue-800 disabled:bg-blue-400 text-white font-black py-4 rounded-2xl text-xs uppercase tracking-widest active:scale-[0.98] transition">
                 {submittingPayment ? "Menghantar..." : "📤 Hantar Resit"}
               </button>
             </div>
@@ -273,9 +218,7 @@ export default function AgentDashboard() {
           {/* PAYMENT HISTORY */}
           {payments.length > 0 && (
             <div className="pt-2 border-t border-gray-100">
-              <h2 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">
-                Sejarah Bayaran
-              </h2>
+              <h2 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Sejarah Bayaran</h2>
               <div className="space-y-3">
                 {payments.map((p) => (
                   <div key={p.id} className="flex items-center gap-3 p-3 border border-gray-100 rounded-2xl bg-gray-50">
@@ -298,11 +241,40 @@ export default function AgentDashboard() {
             </div>
           )}
 
+          {/* CHANGE PASSWORD */}
+          <div className="pt-4 border-t border-gray-100">
+            <h2 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Tukar Kata Laluan</h2>
+            {pwSuccess && <div className="bg-green-50 text-green-700 px-4 py-3 rounded-2xl text-xs font-black mb-4 border border-green-100 uppercase tracking-wide">✅ {pwSuccess}</div>}
+            {pwError && <div className="bg-red-50 text-red-600 px-4 py-3 rounded-2xl text-xs font-black mb-4 border border-red-100 uppercase tracking-wide">⚠️ {pwError}</div>}
+            <div className="space-y-3">
+              <div>
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Kata Laluan Semasa</label>
+                <input type="password" placeholder="••••••••" value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  className="w-full px-4 py-3.5 border border-gray-100 rounded-2xl bg-gray-50 outline-none focus:border-blue-500 focus:bg-white transition text-sm font-medium text-gray-800 placeholder:text-gray-300" />
+              </div>
+              <div>
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Kata Laluan Baharu</label>
+                <input type="password" placeholder="Min 8 aksara" value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="w-full px-4 py-3.5 border border-gray-100 rounded-2xl bg-gray-50 outline-none focus:border-blue-500 focus:bg-white transition text-sm font-medium text-gray-800 placeholder:text-gray-300" />
+              </div>
+              <div>
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Sahkan Kata Laluan Baharu</label>
+                <input type="password" placeholder="Ulang kata laluan baharu" value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="w-full px-4 py-3.5 border border-gray-100 rounded-2xl bg-gray-50 outline-none focus:border-blue-500 focus:bg-white transition text-sm font-medium text-gray-800 placeholder:text-gray-300" />
+              </div>
+              <button onClick={handleChangePassword} disabled={changingPassword}
+                className="w-full bg-blue-900 hover:bg-blue-800 disabled:bg-blue-400 text-white font-black py-4 rounded-2xl text-xs uppercase tracking-widest active:scale-[0.98] transition">
+                {changingPassword ? "Menukar..." : "🔒 Tukar Kata Laluan"}
+              </button>
+            </div>
+          </div>
+
           {/* LOGOUT */}
-          <button
-            onClick={handleLogout}
-            className="w-full py-3 border border-red-400 text-red-500 rounded-xl text-xs font-black uppercase tracking-widest bg-transparent hover:bg-red-50 transition cursor-pointer"
-          >
+          <button onClick={handleLogout}
+            className="w-full py-3 border border-red-400 text-red-500 rounded-xl text-xs font-black uppercase tracking-widest bg-transparent hover:bg-red-50 transition cursor-pointer">
             Log Keluar
           </button>
 

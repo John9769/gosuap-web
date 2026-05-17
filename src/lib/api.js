@@ -15,12 +15,28 @@ export const loginAgent = async (email, password) => {
   }
 };
 
+export const changePassword = async (currentPassword, newPassword, token) => {
+  try {
+    const response = await fetch(`${API_URL}/auth/change-password`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ currentPassword, newPassword }),
+    });
+    return await response.json();
+  } catch (error) {
+    console.error("Change Password Error:", error);
+    return { error: "Gagal menukar kata laluan" };
+  }
+};
+
 // --- UPLOAD ---
 export const uploadImage = async (file, token) => {
   try {
     const formData = new FormData();
     formData.append("image", file);
-
     const response = await fetch(`${API_URL}/vendors/upload`, {
       method: "POST",
       headers: { Authorization: `Bearer ${token}` },
@@ -89,6 +105,23 @@ export const createAgent = async (agentData, token) => {
   } catch (error) {
     console.error("Create Agent Error:", error);
     return { error: "Failed to create agent" };
+  }
+};
+
+export const resetAgentPassword = async (agentId, newPassword, token) => {
+  try {
+    const response = await fetch(`${API_URL}/admin/reset-password`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ agentId, newPassword }),
+    });
+    return await response.json();
+  } catch (error) {
+    console.error("Reset Password Error:", error);
+    return { error: "Gagal menetapkan semula kata laluan" };
   }
 };
 
