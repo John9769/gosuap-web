@@ -132,7 +132,6 @@ export default function LandingPage() {
       {/* NAVBAR */}
       <nav className="fixed top-0 left-0 right-0 z-50 flex justify-center items-center px-6 py-4"
         style={{ background: 'linear-gradient(to bottom, rgba(10,17,0,0.95), transparent)' }}>
-        <img src="/logo.png" alt="GoSuap" className="h-28 w-auto object-contain" style={{mixBlendMode:'multiply'}} />
       </nav>
 
       {/* HERO */}
@@ -143,7 +142,7 @@ export default function LandingPage() {
         <div className="absolute bottom-0 left-0 right-0 h-40"
           style={{ background: 'linear-gradient(to bottom, transparent, #0a1100)' }} />
 
-        <div className="relative z-10 w-full max-w-6xl mx-auto px-6 flex flex-col lg:flex-row items-center gap-8 pt-28 pb-16">
+        <div className="relative z-10 w-full max-w-6xl mx-auto px-6 flex flex-col lg:flex-row items-center gap-8 pt-16 pb-16">
 
           <div className="flex-1">
             <div className="fade-up-1 inline-flex items-center gap-2 bg-[#162200] border border-[#2a4400] rounded-full px-4 py-1.5 mb-5">
