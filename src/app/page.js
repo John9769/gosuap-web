@@ -144,7 +144,7 @@ export default function LandingPage() {
 
         <div className="relative z-10 w-full max-w-6xl mx-auto px-6 flex flex-col lg:flex-row items-center gap-8 pt-16 pb-16">
 
-          <div className="flex-1">
+          <div className="flex-1 flex flex-col items-center lg:items-start">
             <div className="fade-up-1 inline-flex items-center gap-2 bg-[#162200] border border-[#2a4400] rounded-full px-4 py-1.5 mb-5">
               <span className="w-2 h-2 rounded-full bg-[#b8e030] inline-block" style={{boxShadow:'0 0 8px #b8e030'}}/>
               <span className="font-nunito text-[10px] font-black text-[#b8e030] uppercase tracking-[.25em]">
