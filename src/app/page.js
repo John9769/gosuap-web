@@ -132,7 +132,7 @@ export default function LandingPage() {
       {/* NAVBAR */}
       <nav className="fixed top-0 left-0 right-0 z-50 flex justify-center items-center px-6 py-4"
         style={{ background: 'linear-gradient(to bottom, rgba(10,17,0,0.95), transparent)' }}>
-        <img src="/logo.png" alt="GoSuap" className="h-20 w-auto object-contain" />
+        <img src="/logo.png" alt="GoSuap" className="h-20 w-auto object-contain" style={{mixBlendMode:'multiply'}} />
       </nav>
 
       {/* HERO */}
@@ -320,7 +320,7 @@ export default function LandingPage() {
       {/* FOOTER */}
       <footer className="border-t border-[#1c2e00] px-6 py-8">
         <div className="max-w-6xl mx-auto flex flex-col items-center gap-4">
-          <img src="/logo.png" alt="GoSuap" className="h-8 w-auto object-contain opacity-60" />
+          <img src="/logo.png" alt="GoSuap" className="h-8 w-auto object-contain opacity-60" style={{mixBlendMode:'multiply'}} />
           <p className="font-nunito text-[11px] text-gray-700 font-bold uppercase tracking-widest text-center">
             © 2026 GoSuap · Muslim Food Market Place Malaysia
           </p>
